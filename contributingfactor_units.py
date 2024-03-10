@@ -1,51 +1,34 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-file_path = './Spill_Incidents.csv'
-data = pd.read_csv(file_path)
-
-# Data Cleaning and Modification
-# Remove records with missing 'Units'
+data = pd.read_csv('./Spill_Incidents.csv')
+data['Contributing Factor'] = data['Contributing Factor'].replace(['Other'], 'Unknown')
 clean_data = data.dropna(subset=['Units']).copy()
+clean_data = clean_data[~clean_data['Contributing Factor'].isin(['Unknown'])]
 
-# Combine "Unknown" and "Other" into "Unknown"
-clean_data['Contributing Factor'] = clean_data['Contributing Factor'].replace(['Other'], 'Unknown')
+top_factors_count = clean_data['Contributing Factor'].value_counts().head(5)
+plt.figure(figsize=(8, 8))
+top_factors_count.plot.pie(autopct='%1.1f%%', startangle=140)
+plt.title('Top 5 Contributing Factors')
+plt.ylabel('')
+plt.tight_layout()
+plt.show()
 
-# compute sum and average
-data_cleaned = clean_data.groupby(['Contributing Factor', 'Units'])['Quantity'].sum().reset_index()
-avg_data_cleaned = clean_data.groupby(['Contributing Factor', 'Units'])['Quantity'].mean().reset_index()
+top_factors = top_factors_count.index
+filtered_data = clean_data[(clean_data['Contributing Factor'].isin(top_factors)) & (clean_data['Units'] == 'Gallons')]
+average_quantities = filtered_data.groupby('Contributing Factor')['Quantity'].mean().reset_index()
+average_quantities = average_quantities.sort_values(by='Quantity', ascending=False)
 
-# Filter data for gallons only
-gallons_data_cleaned = data_cleaned[data_cleaned['Units'] == 'Gallons']
-gallons_average_data_cleaned = avg_data_cleaned[avg_data_cleaned['Units'] == 'Gallons']
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Quantity', y='Contributing Factor', data=average_quantities, palette='coolwarm')
+plt.title('Top Average Quantity per Case')
+plt.xlabel('Average Quantity in Gallons')
+plt.ylabel('Contributing Factor')
+plt.tight_layout()
+plt.show()
 
-# create plots for total quantities
-def create_plot(data, title_prefix='Top'):
-    data_sorted = data.sort_values(by='Quantity', ascending=False).head(10)  # Show top 10 
-    factors = data_sorted['Contributing Factor']
-    quantities = data_sorted['Quantity']
-    
-    plt.figure(figsize=(10, 6))
-    plt.barh(factors, quantities, color='red')
-    plt.xlabel('Quantity in Gallons')
-    plt.ylabel('Contributing Factor')
-    plt.title(f'{title_prefix} Contributing Factors by Total Quantity in Gallons')
-    plt.tight_layout()
-    plt.show()
-
-def create_average_plot(data):
-    data_sorted = data.sort_values(by='Quantity', ascending=False).head(10)  # Show top 10 
-    factors = data_sorted['Contributing Factor']
-    averages = data_sorted['Quantity']
-    
-    plt.figure(figsize=(10, 6))
-    plt.barh(factors, averages, color='red')
-    plt.xlabel('Average Quantity in Gallons')
-    plt.ylabel('Contributing Factor')
-    plt.title('Top Contributing Factors by Average Quantity in Gallons')
-    plt.tight_layout()
-    plt.show()
-
-
-create_plot(gallons_data_cleaned)
-create_average_plot(gallons_average_data_cleaned)
+data['Spill Date'] = pd.to_datetime(data['Spill Date'], errors='coerce')
+min_year = data['Spill Date'].dt.year.min()
+max_year = data['Spill Date'].dt.year.max()
+print(f"Start Year: {min_year}, End Year: {max_year}")
