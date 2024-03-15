@@ -11,8 +11,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-csv_file_path = '/Users/macbookpro2013/Downloads/Spill_Incidents.csv'
-
 def source_quantity_units(file_path):
     with open(file_path, 'r') as file:
 
@@ -64,6 +62,3 @@ def source_quantity_units(file_path):
     plt.show()
 
     return summ
-
-results = source_quantity_units(csv_file_path)
-print(results)
